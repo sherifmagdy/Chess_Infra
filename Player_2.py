@@ -17,10 +17,7 @@ if client.waitForPlayer() == 1:
             client.send_mov(i, i)
             print '[+] Sending move : (%d ,%d)' %(i,i)
 
-
-
             i += 1
-            # raw_input('Next Mov ?')
 
     except Exception, e:
         print e

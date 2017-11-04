@@ -13,7 +13,6 @@ class chess_client():
     def __del__(self):
         self.hsocket.close()
 
-
     # connect to server and intialize socket handle
     def srvconnect(self):
         s = socket.socket()

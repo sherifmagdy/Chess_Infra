@@ -16,8 +16,33 @@ from time import *
 # # wait for other player to connect ; blocks
 # client.waitForPlayer_Modified()
 # print 'first_move flag  : ' + str(client.has_first_move)
+# print 'initial board : '+client.intial_string
 #
-# 3- based on the received flag wait for amove or send move .
+# 3- based on the received flag wait for move or send move .
+#
+# 4-to send move , signal the other player at first if it still connected if yes then send the move .
+# try :
+#     if client.probe() == 1 :
+#         print '[+] Sending move : (%d ,%d) ...' % (i, i)
+#         # send move to the other player
+#         client.send_mov(i, i)
+#         print '[+] Move sent'
+#     else :
+#         print '[-] other player disconnected'
+#
+# except :
+#     print '[-] server disconnected'
+#
+#
+# 5- waitformov method blocks to listen for any move from the other player ,if the other player disconnected it will return type of -1 in the list [-1]
+#
+# mov = client.waitformov()
+# print '[+] Receiving move :' + str(mov)
+# if mov[0] == -1 :
+#     print '[-] other player disconnected'
+#     # code to reconnect
+#
+
 
 
 class chess_client():

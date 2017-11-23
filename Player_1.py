@@ -11,8 +11,9 @@ client.srvconnect()
 # wait for other player to connect ; blocks
 client.waitForPlayer()
 try:
-    print 'other Player connected'
+    print '[+] other Player connected'
     print 'first_move flag  : ' + str(client.has_first_move)
+    print 'initial board : '+client.intial_string
     i=555
     while 1 :
 

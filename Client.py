@@ -144,5 +144,5 @@ class chess_client():
             board_state = self.hsocket.recv(sz)
             fmt = str(sz) + 's'
             state, = unpack(fmt, board_state)
-
-            print '[+] Received intial state from the server : '+state
+            self.intial_string = state
+            # print '[+] Received intial state from the server : '+state

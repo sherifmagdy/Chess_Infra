@@ -3,21 +3,26 @@ from Client import *
 client = chess_client('127.0.0.1', 7777)
 player_no = client.srvconnect()
 
-if client.waitForPlayer() == 1:
-    try:
-        print 'other Player connected'
-        i = 0
-        while 1:
+client.waitForPlayer()
+try:
+    print 'other Player connected'
+    print 'first_move falge : ' + str(client.has_first_move)
+    i = 0
+    while 1:
 
-            mov = client.waitformov()
-            print '[+] Receiving move :' + str(mov)
+        mov = client.waitformov()
 
-            sleep(5)
+        print '[+] Receiving move :' + str(mov)
+        if mov[0] == -1 :
+            print '[-] other player disconnected'
+            # code to reconnect
 
-            client.send_mov(i, i)
-            print '[+] Sending move : (%d ,%d)' %(i,i)
+        sleep(222)
 
-            i += 1
+        client.send_mov(i, i)
+        print '[+] Sending move : (%d ,%d)' %(i,i)
 
-    except Exception, e:
-        print e
+        i += 1
+
+except Exception, e:
+    print e

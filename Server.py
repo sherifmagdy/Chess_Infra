@@ -4,9 +4,10 @@ import threading
 from struct import *
 import binascii
 import time
+from random import randint
 
 class ThreadedServer(object):
-    def __init__(self, host, port):
+    def __init__(self, host, port ,intial_state , player1_time , player2_time ,force_start=0 ):
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,6 +29,9 @@ class ThreadedServer(object):
         self.game = False
         self.first_play = True
 
+        # intial paramters for the class
+        self.intial_state = intial_state
+        self.force_start=force_start
 
     def listen(self):
         self.sock.listen(5)
@@ -59,6 +63,50 @@ class ThreadedServer(object):
 
                 threading.Thread(target = self.listenToClient,args = (x,)).start()
 
+                # Start counting time base as soon as the two players are already registered
+                if self.first_play and self.players[0] == True and self.players[1] == True:
+
+                    # broadcast intial state and the starter
+                    sock1 = self.hsockets[0]
+                    sock2 = self.hsockets[1]
+
+                    # first player has the move randomy or if force start set
+                    if self.force_start == 0 :
+                        # check who will have the first move randomly
+                        starter = randint(0, 1)
+                        if starter == 0  :
+                            first_player = 1
+                            second_player = 0
+                        else :
+                            first_player = 0
+                            second_player = 1
+
+                    else :
+                        # for given force start
+                        if self.force_start == 1  :
+                            first_player = 1
+                            second_player = 0
+
+                        elif self.force_start == 2 :
+                            first_player = 0
+                            second_player = 1
+
+                    # length of str
+                    sz = len(self.intial_state)
+                    # intial msg opcode == 12
+                    opcode = 12
+
+                    # format of intial message
+                    fmt = 'iii ' + str(sz) + 's'
+                    sock1.send(pack(fmt, opcode,  first_player ,sz, self.intial_state))
+                    sock2.send(pack(fmt, opcode,  second_player,sz, self.intial_state))
+
+                    self.timers[1] = time.time()
+                    self.timers[0] = time.time()
+                    self.first_play = False
+                    print '[Server] starting timers'
+                    print '[Player_1] first move flag :'+str(first_player)
+                    print '[Player_2] first move flag :'+str(second_player)
 
     def listenToClient(self ,player):
         # opcode size
@@ -73,13 +121,6 @@ class ThreadedServer(object):
             while 1:
                     data = sock.recv(size)
                     opcode , = unpack('i',data)
-
-                    # Start counting time base as soon as the two players are already registered
-                    if self.first_play and self.players[0] == True and self.players[1] == True:
-                        self.timers[1] = time.time();
-                        self.timers[0] = time.time()
-                        self.first_play = False
-                        print '[Server] starting timers'
 
                     # Debug Msg
                     # print '[Server] Received opcode [%s] from player %d' %(self.opcodes[opcode],player+1)
@@ -173,6 +214,10 @@ class ThreadedServer(object):
             self.players[player] = False
             self.hsockets[player] = None
 
+            # send message to nofifty other player the player disconnected
+            Othersock = self.hsockets[(player + 1) % 2]
+            Othersock.sendall(pack('i', 3))
+
 
     def start_timer(self,player):
         self.timers[player] = time.time()
@@ -188,4 +233,7 @@ class ThreadedServer(object):
             print '[Timing] Player %d lose => timeout !!' %player
 
 if __name__ == "__main__":
-    ThreadedServer('127.0.0.1',7777).listen()
+    ThreadedServer('127.0.0.1',7777 , 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq- 0 1' ,0,0,0).listen()
+#     force paramter 1 : player one has first move
+#     force paramter 2 : player two has first move
+

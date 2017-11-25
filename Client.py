@@ -94,8 +94,9 @@ class chess_client():
                 result = [1, state]
 
             # player disconnected
-            elif type == 3:
+            elif type == 10:
                 result = [-1]
+
 
             return result
         except Exception ,e :
@@ -135,6 +136,7 @@ class chess_client():
         data = self.hsocket.recv(4)
         result, = unpack('i', data)
         if result == 1: return 1
+        return 0
 
     # send state board string to server
     # return  : 1 if acked  0 if failed

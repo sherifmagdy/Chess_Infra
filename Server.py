@@ -1,4 +1,3 @@
-
 import socket
 import threading
 from struct import *
@@ -48,20 +47,18 @@ class ThreadedServer(object):
                     print '==================='
                     self.players[0] = True
                     self.hsockets[0] = client
+                    threading.Thread(target=self.listenToClient, args=(0,)).start()
+
 
                 elif self.players[0] == True and self.players[1] == False:
                     print '==================='
                     print 'player 2 registered'
                     print '==================='
                     self.players[1] = True
-                    self.game = True
                     self.hsockets[1] = client
+                    threading.Thread(target=self.listenToClient, args=(1,)).start()
 
-                x = None
-                if self.players[0] : x = 0
-                if self.players[1] : x = 1
 
-                threading.Thread(target = self.listenToClient,args = (x,)).start()
 
                 # Start counting time base as soon as the two players are already registered
                 if self.first_play and self.players[0] == True and self.players[1] == True:
@@ -70,7 +67,7 @@ class ThreadedServer(object):
                     sock1 = self.hsockets[0]
                     sock2 = self.hsockets[1]
 
-                    # first player has the move randomy or if force start set
+                    # first player has the move randomly or if force start set
                     if self.force_start == 0 :
                         # check who will have the first move randomly
                         starter = randint(0, 1)
@@ -214,10 +211,15 @@ class ThreadedServer(object):
             self.players[player] = False
             self.hsockets[player] = None
 
+            if not self.players[0] and not self.players[1] :
+                self.first_play = True
+
             # send message to nofifty other player the player disconnected
             Othersock = self.hsockets[(player + 1) % 2]
-            Othersock.sendall(pack('i', 3))
-
+            try :
+                Othersock.sendall(pack('i', 10))
+            except:
+                print '[-] both player disconnected'
 
     def start_timer(self,player):
         self.timers[player] = time.time()

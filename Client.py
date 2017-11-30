@@ -55,6 +55,7 @@ class chess_client():
         self.has_first_move = None
         self.intial_string = ''
 
+        self.game_mode =None
     def __del__(self):
         self.hsocket.close()
 
@@ -69,7 +70,8 @@ class chess_client():
     # return type : list [type of mov , mov data]
     # type of move :
     #     0 => single mov   , mov data (tuple) => (piece , dst)
-    #     1 => state string , mov data (string)=> board string state
+    #     1 => single move with promotion , mov data tuple => (piece, dst , prom)
+    #     2 => game ended , W=> win message , L=> lose message
     def waitformov(self):
         try :
             result = []
@@ -79,24 +81,35 @@ class chess_client():
             type, = unpack('i', type)
 
             # single move
-            if type == 0:
-                move = self.hsocket.recv(8)
-                piece, dst = unpack('ii', move)
+            if type == 2:
+                move = self.hsocket.recv(4)
+                piece, dst = unpack('2s 2s', move)
                 result = [0, (piece, dst)]
 
-            # string
-            elif type == 1:
-                size = self.hsocket.recv(4)
-                sz, = unpack('i', size)
-                board_state = self.hsocket.recv(sz)
-                fmt = str(sz) + 's'
-                state, = unpack(fmt, board_state)
-                result = [1, state]
+            # single mov with promotion
+            elif type == 6:
+                move = self.hsocket.recv(5)
+                piece, dst ,prom= unpack('2s 2s 1s', move)
+                result = [1, (piece, dst ,prom)]
+
+            # # string
+            # elif type == 1:
+            #     size = self.hsocket.recv(4)
+            #     sz, = unpack('i', size)
+            #     board_state = self.hsocket.recv(sz)
+            #     fmt = str(sz) + 's'
+            #     state, = unpack(fmt, board_state)
+            #     result = [1, state]
 
             # player disconnected
             elif type == 10:
                 result = [-1]
 
+            # win or lose message
+            elif type == 3 :
+                res = self.hsocket.recv(1)
+                res, = unpack('1s', res)
+                result = [2, res]
 
             return result
         except Exception ,e :
@@ -104,17 +117,28 @@ class chess_client():
 
     # send single move to the server
     # return  : 1 if acked  0 if failed
-    # ex: send_move(15 , 12)
+    # ex: send_move('A1' , 'C4')
     def send_mov(self, piece, dst):
         try :
-            print '[+] sending single move : piece = %d  | dst = %d' % (piece, dst)
-            data = (piece, dst)
-            self.hsocket.send(pack('iii', 2, *data))
-            data = self.hsocket.recv(4)
-            result, = unpack('i', data)
-            if result == 1: return 1
-            return 0
+            print '[+] sending single move : piece = %s  | dst = %s' % (piece, dst)
+
+            self.hsocket.send(pack('i 2s 2s', 2, piece ,dst))
+
+            return 1
         except :
+            return 0
+
+    # send single move WITH Promotion to the server
+    # return  : 1 if acked  0 if failed
+    # ex: send_move('A1' ,'C4','Q')
+    def send_mov_promotion(self, piece, dst ,prom):
+        try:
+            print '[+] sending single move with promotion : piece = %s  | dst = %s | prom = %s' % (piece, dst,prom)
+
+            self.hsocket.send(pack('i 2s 2s 1s', 6, piece, dst,prom))
+
+            return 1
+        except:
             return 0
 
     # send win message to the server to end the game
@@ -127,6 +151,16 @@ class chess_client():
         result, = unpack('i', data)
         if result == 1: return 1
         return 0
+
+
+    # return int from 0 to 900 no. of remaining sec
+    def get_time(self):
+        print '[+] Requesting remaing time from server'
+        self.hsocket.send(pack('i', 5))
+        data = self.hsocket.recv(4)
+        time , = unpack('i', data)
+        return time
+
 
     # Probe the existence of the other player
     # return  : 1 if other player connected  , otherwise blocks
@@ -172,4 +206,9 @@ class chess_client():
             fmt = str(sz) + 's'
             state, = unpack(fmt, board_state)
             self.intial_string = state
+
+            mode = self.hsocket.recv(4)
+            self.game_mode, = unpack('i', mode)
+
+
             # print '[+] Received intial state from the server : '+state
